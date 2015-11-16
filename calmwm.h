@@ -21,6 +21,14 @@
 #ifndef _CALMWM_H_
 #define _CALMWM_H_
 
+#ifndef __dead
+#ifdef __GNUC__
+#define __dead __attribute__((noreturn))
+#else
+#define __dead
+#endif
+#endif
+
 #include <sys/param.h>
 #include <stdio.h>
 #include "queue.h"
@@ -397,7 +405,7 @@ extern struct screen_q			 Screenq;
 extern struct conf			 Conf;
 extern const char			*homedir;
 
-void			 usage(void);
+__dead void		 usage(void);
 
 void			 client_applysizehints(struct client_ctx *);
 void			 client_config(struct client_ctx *);
