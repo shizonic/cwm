@@ -662,10 +662,49 @@ match:
 	}
 }
 
+static void
+client_restack(struct screen_ctx *sc)
+{
+	struct client_ctx	*cc;
+	Window			*winlist;
+	int			 i, lastempty = -1;
+	int			 nwins = 0, highstack = 0;
+
+	TAILQ_FOREACH(cc, &sc->clientq, entry) {
+		if (cc->flags & CLIENT_HIDDEN)
+			continue;
+		if (cc->stackingorder > highstack)
+			highstack = cc->stackingorder;
+	}
+	winlist = xreallocarray(NULL, (highstack + 1), sizeof(*winlist));
+
+	/* Invert the stacking order for XRestackWindows(). */
+	TAILQ_FOREACH(cc, &sc->clientq, entry) {
+		if (cc->flags & CLIENT_HIDDEN)
+			continue;
+		winlist[highstack - cc->stackingorder] = cc->win;
+		nwins++;
+	}
+
+	/* Un-sparseify */
+	for (i = 0; i <= highstack; i++) {
+		if (!winlist[i] && lastempty == -1)
+			lastempty = i;
+		else if (winlist[i] && lastempty != -1) {
+			winlist[lastempty] = winlist[i];
+			if (++lastempty == i)
+				lastempty = -1;
+		}
+	}
+
+	XRestackWindows(X_Dpy, winlist, nwins);
+	free(winlist);
+}
+
 void
 client_cycle(struct screen_ctx *sc, int flags)
 {
-	struct client_ctx	*newcc, *oldcc, *prevcc;
+	struct client_ctx	*newcc, *oldcc;
 	int			 again = 1;
 
 	/* For X apps that ignore events. */
@@ -675,7 +714,6 @@ client_cycle(struct screen_ctx *sc, int flags)
 	if (TAILQ_EMPTY(&sc->clientq))
 		return;
 
-	prevcc = TAILQ_FIRST(&sc->clientq);
 	oldcc = client_current();
 	if (oldcc == NULL)
 		oldcc = (flags & CWM_CYCLE_REVERSE) ?
@@ -704,10 +742,13 @@ client_cycle(struct screen_ctx *sc, int flags)
 		}
 	}
 
-	/* reset when cycling mod is released. XXX I hate this hack */
-	sc->cycling = 1;
 	client_ptrsave(oldcc);
-	client_raise(prevcc);
+	if (!sc->cycling) {
+		/* reset when cycling mod is released. XXX I hate this hack */
+		sc->cycling = 1;
+		screen_updatestackingorder(sc);
+	} else
+		client_restack(sc);
 	client_raise(newcc);
 	if (!client_inbound(newcc, newcc->ptr.x, newcc->ptr.y)) {
 		newcc->ptr.x = newcc->geom.w / 2;
