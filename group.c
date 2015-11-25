@@ -34,7 +34,6 @@
 
 static struct group_ctx	*group_next(struct group_ctx *);
 static struct group_ctx	*group_prev(struct group_ctx *);
-static void		 group_restack(struct group_ctx *);
 static void		 group_setactive(struct group_ctx *);
 
 const char *num_to_name[] = {
@@ -82,43 +81,9 @@ group_show(struct group_ctx *gc)
 			client_unhide(cc);
 	}
 
-	group_restack(gc);
+	client_restack(&gc->clientq,
+	    CWM_CLIENT_RESTACK_GROUP | CWM_CLIENT_RESTACK_HIDDEN);
 	group_setactive(gc);
-}
-
-static void
-group_restack(struct group_ctx *gc)
-{
-	struct client_ctx	*cc;
-	Window			*winlist;
-	int			 i, lastempty = -1;
-	int			 nwins = 0, highstack = 0;
-
-	TAILQ_FOREACH(cc, &gc->clientq, group_entry) {
-		if (cc->stackingorder > highstack)
-			highstack = cc->stackingorder;
-	}
-	winlist = xreallocarray(NULL, (highstack + 1), sizeof(*winlist));
-
-	/* Invert the stacking order for XRestackWindows(). */
-	TAILQ_FOREACH(cc, &gc->clientq, group_entry) {
-		winlist[highstack - cc->stackingorder] = cc->win;
-		nwins++;
-	}
-
-	/* Un-sparseify */
-	for (i = 0; i <= highstack; i++) {
-		if (!winlist[i] && lastempty == -1)
-			lastempty = i;
-		else if (winlist[i] && lastempty != -1) {
-			winlist[lastempty] = winlist[i];
-			if (++lastempty == i)
-				lastempty = -1;
-		}
-	}
-
-	XRestackWindows(X_Dpy, winlist, nwins);
-	free(winlist);
 }
 
 void

@@ -62,6 +62,9 @@
 #define CWM_CLIENT_RCYCLE	0x0002
 #define CWM_CLIENT_CYCLE_INGRP	0x0004
 
+#define CWM_CLIENT_RESTACK_GROUP	0x0001
+#define CWM_CLIENT_RESTACK_HIDDEN	0x0002
+
 #define CWM_CLIENT_TILE_HORIZ	0x0001
 #define CWM_CLIENT_TILE_VERT	0x0002
 
@@ -385,6 +388,7 @@ __dead void		 usage(void);
 void			 client_applysizehints(struct client_ctx *);
 void			 client_config(struct client_ctx *);
 struct client_ctx	*client_current(void);
+void			 client_restack(struct client_ctx_q *, int);
 void			 client_cycle(struct screen_ctx *, int);
 void			 client_cycle_leave(struct screen_ctx *);
 void			 client_delete(struct client_ctx *);
