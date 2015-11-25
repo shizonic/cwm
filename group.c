@@ -152,19 +152,21 @@ void
 group_movetogroup(struct client_ctx *cc, int idx)
 {
 	struct screen_ctx	*sc = cc->sc;
-	struct group_ctx	*gc;
+	struct group_ctx	*gc = NULL;
 
 	if (idx < 0 || idx >= Conf.ngroups)
 		errx(1, "%s: index out of range (%d)", __func__, idx);
 
-	TAILQ_FOREACH(gc, &sc->groupq, entry) {
-		if (gc->num == idx)
-			break;
+	if (idx != 0) {
+		TAILQ_FOREACH(gc, &sc->groupq, entry) {
+			if (gc->num == idx)
+				break;
+		}
 	}
 
 	if (cc->gc == gc)
 		return;
-	if (group_holds_only_hidden(gc))
+	if (gc != NULL && group_holds_only_hidden(gc))
 		client_hide(cc);
 	group_assign(gc, cc);
 }
