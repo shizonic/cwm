@@ -679,15 +679,62 @@ match:
 }
 
 void
+client_restack(struct client_q *clientq, int flags)
+{
+#define CLIENTQ_FOREACH(var, head, ingrp)				\
+	for((var) = TAILQ_FIRST(head);					\
+	    (var) != TAILQ_END(head);					\
+	    (var) = (ingrp) ?						\
+		TAILQ_NEXT(var, group_entry) : TAILQ_NEXT(var, entry))
+	struct client_ctx	*cc;
+	Window			*winlist;
+	int			 i, lastempty = -1;
+	int			 nwins = 0, highstack = 0;
+
+	CLIENTQ_FOREACH(cc, clientq, flags & CWM_RESTACK_GROUP) {
+		if (!(flags & CWM_RESTACK_HIDDEN) &&
+		    (cc->flags & CLIENT_HIDDEN)) {
+			continue;
+		}
+		if (cc->stackingorder > highstack)
+			highstack = cc->stackingorder;
+	}
+	winlist = xreallocarray(NULL, (highstack + 1), sizeof(*winlist));
+
+	/* Invert the stacking order for XRestackWindows(). */
+	CLIENTQ_FOREACH(cc, clientq, flags & CWM_RESTACK_GROUP) {
+		if (!(flags & CWM_RESTACK_HIDDEN) &&
+		    (cc->flags & CLIENT_HIDDEN)) {
+			continue;
+		}
+		winlist[highstack - cc->stackingorder] = cc->win;
+		nwins++;
+	}
+
+	/* Un-sparseify */
+	for (i = 0; i <= highstack; i++) {
+		if (!winlist[i] && lastempty == -1)
+			lastempty = i;
+		else if (winlist[i] && lastempty != -1) {
+			winlist[lastempty] = winlist[i];
+			if (++lastempty == i)
+				lastempty = -1;
+		}
+	}
+
+	XRestackWindows(X_Dpy, winlist, nwins);
+	free(winlist);
+}
+
+void
 client_cycle(struct screen_ctx *sc, int flags)
 {
-	struct client_ctx	*newcc, *oldcc, *prevcc;
+	struct client_ctx	*newcc, *oldcc;
 	int			 again = 1;
 
 	if (TAILQ_EMPTY(&sc->clientq))
 		return;
 
-	prevcc = TAILQ_FIRST(&sc->clientq);
 	oldcc = client_current();
 	if (oldcc == NULL)
 		oldcc = (flags & CWM_CYCLE_REVERSE) ?
@@ -715,10 +762,13 @@ client_cycle(struct screen_ctx *sc, int flags)
 		}
 	}
 
-	/* Reset when cycling mod is released. XXX I hate this hack */
-	sc->cycling = 1;
 	client_ptrsave(oldcc);
-	client_raise(prevcc);
+	if (!sc->cycling) {
+		/* Reset when cycling mod is released. XXX I hate this hack */
+		sc->cycling = 1;
+		screen_updatestackingorder(sc);
+	} else
+		client_restack(&sc->clientq, 0);
 	client_raise(newcc);
 	if (!client_inbound(newcc, newcc->ptr.x, newcc->ptr.y)) {
 		newcc->ptr.x = newcc->geom.w / 2;
