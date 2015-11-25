@@ -90,6 +90,9 @@ size_t strlcpy(char *, const char *, size_t);
 #define CWM_CYCLE_REVERSE	0x0002
 #define CWM_CYCLE_INGROUP	0x0004
 
+#define CWM_RESTACK_GROUP	0x0001
+#define CWM_RESTACK_HIDDEN	0x0002
+
 enum cwm_status {
 	CWM_QUIT,
 	CWM_RUNNING,
@@ -411,6 +414,7 @@ __dead void		 usage(void);
 void			 client_applysizehints(struct client_ctx *);
 void			 client_config(struct client_ctx *);
 struct client_ctx	*client_current(void);
+void			 client_restack(struct client_q *, int);
 void			 client_cycle(struct screen_ctx *, int);
 void			 client_cycle_leave(struct screen_ctx *);
 void			 client_delete(struct client_ctx *);
