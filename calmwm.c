@@ -19,7 +19,7 @@
  */
 
 #include <sys/types.h>
-#include <sys/queue.h>
+#include "queue.h"
 #include <sys/wait.h>
 
 #include <err.h>
@@ -114,8 +114,10 @@ main(int argc, char **argv)
 	x_init(display_name);
 	cwm_status = CWM_RUNNING;
 
+#ifdef __OpenBSD__
 	if (pledge("stdio rpath proc exec", NULL) == -1)
 		err(1, "pledge");
+#endif
 
 	while (cwm_status == CWM_RUNNING)
 		xev_process();
@@ -218,7 +220,7 @@ sighdlr(int sig)
 	errno = save_errno;
 }
 
-__dead void
+void
 usage(void)
 {
 	extern char	*__progname;

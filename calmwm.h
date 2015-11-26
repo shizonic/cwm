@@ -21,6 +21,27 @@
 #ifndef _CALMWM_H_
 #define _CALMWM_H_
 
+#include <sys/param.h>
+#include <stdio.h>
+#include "queue.h"
+
+/* prototypes for portable-included functions */
+char *fgetln(FILE *, size_t *);
+long long strtonum(const char *, long long, long long, const char **);
+void *reallocarray(void *, size_t, size_t);
+
+
+#ifdef strlcat
+#define HAVE_STRLCAT
+#else
+size_t strlcat(char *, const char *, size_t);
+#endif
+#ifdef strlcpy
+#define HAVE_STRLCPY
+#else
+size_t strlcpy(char *, const char *, size_t);
+#endif
+
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xft/Xft.h>
@@ -383,7 +404,7 @@ enum {
 extern Atom				 cwmh[CWMH_NITEMS];
 extern Atom				 ewmh[EWMH_NITEMS];
 
-__dead void		 usage(void);
+void			 usage(void);
 
 void			 client_applysizehints(struct client_ctx *);
 void			 client_config(struct client_ctx *);

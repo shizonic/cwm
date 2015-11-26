@@ -20,7 +20,7 @@
  */
 
 #include <sys/types.h>
-#include <sys/queue.h>
+#include "queue.h"
 
 #include <ctype.h>
 #include <err.h>

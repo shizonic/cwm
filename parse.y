@@ -35,6 +35,8 @@
 
 #include "calmwm.h"
 
+#define YYSTYPE_IS_DECLARED
+
 TAILQ_HEAD(files, file)		 files = TAILQ_HEAD_INITIALIZER(files);
 static struct file {
 	TAILQ_ENTRY(file)	 entry;
@@ -316,9 +318,9 @@ lookup(char *s)
 
 #define MAXPUSHBACK	128
 
-u_char	*parsebuf;
+char	*parsebuf;
 int	 parseindex;
-u_char	 pushback_buffer[MAXPUSHBACK];
+char	 pushback_buffer[MAXPUSHBACK];
 int	 pushback_index = 0;
 
 int
@@ -411,8 +413,8 @@ findeol(void)
 int
 yylex(void)
 {
-	u_char	 buf[8096];
-	u_char	*p;
+	char	 buf[8096];
+	char	*p;
 	int	 quotec, next, c;
 	int	 token;
 
@@ -456,7 +458,7 @@ yylex(void)
 				yyerror("string too long");
 				return (findeol());
 			}
-			*p++ = c;
+			*p++ = (char)c;
 		}
 		yylval.v.string = xstrdup(buf);
 		return (STRING);
