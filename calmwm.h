@@ -219,9 +219,7 @@ TAILQ_HEAD(autogroup_q, autogroup);
 struct region_ctx {
 	TAILQ_ENTRY(region_ctx)	 entry;
 	int			 num;
-	struct geom		 area;
 	struct geom		 view; /* viewable area */
-	struct geom		 work; /* workable area, gap-applied */
 };
 TAILQ_HEAD(region_q, region_ctx);
 
