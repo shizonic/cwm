@@ -142,12 +142,12 @@ struct geom
 screen_area(struct screen_ctx *sc, int x, int y, int flags)
 {
 	struct region_ctx	*rc;
-	struct geom		 area = sc->work;
+	struct geom		 area = sc->view;
 
 	TAILQ_FOREACH(rc, &sc->regionq, entry) {
-		if ((x >= rc->area.x) && (x < (rc->area.x + rc->area.w)) &&
-		    (y >= rc->area.y) && (y < (rc->area.y + rc->area.h))) {
-			area = rc->area;
+		if ((x >= rc->view.x) && (x < (rc->view.x + rc->view.w)) &&
+		    (y >= rc->view.y) && (y < (rc->view.y + rc->view.h))) {
+			area = rc->view;
 			break;
 		}
 	}
@@ -189,15 +189,10 @@ screen_update_geometry(struct screen_ctx *sc)
 
 			rc = xmalloc(sizeof(*rc));
 			rc->num = i;
-			rc->area.x = ci->x;
-			rc->area.y = ci->y;
-			rc->area.w = ci->width;
-			rc->area.h = ci->height;
 			rc->view.x = ci->x;
 			rc->view.y = ci->y;
 			rc->view.w = ci->width;
 			rc->view.h = ci->height;
-			rc->work = screen_apply_gap(sc, rc->view);
 			TAILQ_INSERT_TAIL(&sc->regionq, rc, entry);
 
 			XRRFreeCrtcInfo(ci);
@@ -210,7 +205,6 @@ screen_update_geometry(struct screen_ctx *sc)
 		rc->view.y = 0;
 		rc->view.w = DisplayWidth(X_Dpy, sc->which);
 		rc->view.h = DisplayHeight(X_Dpy, sc->which);
-		rc->work = screen_apply_gap(sc, rc->view);
 		TAILQ_INSERT_TAIL(&sc->regionq, rc, entry);
 	}
 
