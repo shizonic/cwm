@@ -425,6 +425,7 @@ long			 client_get_wm_state(struct client_ctx *);
 void			 client_getsizehints(struct client_ctx *);
 void			 client_hide(struct client_ctx *);
 void 			 client_htile(struct client_ctx *);
+int			 client_keep_visible(struct client_ctx *);
 void			 client_lower(struct client_ctx *);
 void			 client_map(struct client_ctx *);
 void			 client_msg(struct client_ctx *, Atom, Time);

@@ -104,15 +104,8 @@ kbfunc_client_move(struct client_ctx *cc, union arg *arg)
 	kbfunc_amount(arg->i, Conf.mamount, &mx, &my);
 
 	cc->geom.x += mx;
-	if (cc->geom.x + cc->geom.w < 0)
-		cc->geom.x = -cc->geom.w;
-	if (cc->geom.x > sc->view.w - 1)
-		cc->geom.x = sc->view.w - 1;
 	cc->geom.y += my;
-	if (cc->geom.y + cc->geom.h < 0)
-		cc->geom.y = -cc->geom.h;
-	if (cc->geom.y > sc->view.h - 1)
-		cc->geom.y = sc->view.h - 1;
+	client_keep_visible(cc);
 
 	area = screen_area(sc,
 	    cc->geom.x + cc->geom.w / 2,
@@ -149,6 +142,7 @@ kbfunc_client_resize(struct client_ctx *cc, union arg *arg)
 		cc->geom.w = cc->hint.minw;
 	if ((cc->geom.h += my * cc->hint.inch) < cc->hint.minh)
 		cc->geom.h = cc->hint.minh;
+	client_keep_visible(cc);
 	client_resize(cc, 1);
 
 	/* Make sure the pointer stays within the window. */

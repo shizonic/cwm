@@ -140,6 +140,12 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 
 			cc->geom.x = ev.xmotion.x_root - px - cc->bwidth;
 			cc->geom.y = ev.xmotion.y_root - py - cc->bwidth;
+			if (client_keep_visible(cc)) {
+				px = ev.xmotion.x_root - cc->geom.x -
+				    cc->bwidth;
+				py = ev.xmotion.y_root - cc->geom.y -
+				    cc->bwidth;
+			}
 
 			area = screen_area(sc,
 			    cc->geom.x + cc->geom.w / 2,

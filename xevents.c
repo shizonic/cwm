@@ -139,6 +139,8 @@ xev_handle_configurerequest(XEvent *ee)
 		if (e->value_mask & CWStackMode)
 			wc.stack_mode = e->detail;
 
+		client_keep_visible(cc);
+
 		if (cc->geom.x == 0 && cc->geom.w >= sc->view.w)
 			cc->geom.x -= cc->bwidth;
 

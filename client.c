@@ -433,6 +433,29 @@ client_resize(struct client_ctx *cc, int reset)
 	client_config(cc);
 }
 
+int
+client_keep_visible(struct client_ctx *cc)
+{
+	struct screen_ctx	*sc = cc->sc;
+	int			 changed = 0;
+
+	if (cc->geom.x + cc->geom.w + (int)(cc->bwidth * 2) <= 0) {
+		cc->geom.x = -(cc->geom.w + (cc->bwidth * 2) - 1);
+		changed = 1;
+	} else if (cc->geom.x >= sc->view.w) {
+		cc->geom.x = sc->view.w - 1;
+		changed = 1;
+	}
+	if (cc->geom.y + cc->geom.h + (int)(cc->bwidth * 2) <= 0) {
+		cc->geom.y = -(cc->geom.h + (cc->bwidth * 2) - 1);
+		changed = 1;
+	} else if (cc->geom.y >= sc->view.h) {
+		cc->geom.y = sc->view.h - 1;
+		changed = 1;
+	}
+	return(changed);
+}
+
 void
 client_move(struct client_ctx *cc)
 {
