@@ -221,12 +221,14 @@ client_setactive(struct client_ctx *cc)
 		client_draw_border(oldcc);
 	}
 
-	/* If we're in the middle of cycling, don't change the order. */
-	if (!sc->cycling)
+	/* If we're in the middle of cycling, don't change the order or
+	 * clear the urgency flag. */
+	if (!sc->cycling) {
 		client_mtf(cc);
+		cc->flags &= ~CLIENT_URGENCY;
+	}
 
 	cc->flags |= CLIENT_ACTIVE;
-	cc->flags &= ~CLIENT_URGENCY;
 	client_draw_border(cc);
 	conf_grab_mouse(cc->win);
 	xu_ewmh_net_active_window(sc, cc->win);
