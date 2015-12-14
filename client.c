@@ -97,7 +97,7 @@ client_init(Window win, struct screen_ctx *sc)
 
 	if (wattr.map_state != IsViewable) {
 		client_placecalc(cc);
-		client_move(cc);
+		client_resize(cc, 0);
 		if ((cc->wmh) && (cc->wmh->flags & StateHint))
 			client_set_wm_state(cc, cc->wmh->initial_state);
 	} else {
