@@ -477,7 +477,7 @@ client_ptrwarp(struct client_ctx *cc)
 {
 	int	 x = cc->ptr.x, y = cc->ptr.y;
 
-	if (x == -1 || y == -1) {
+	if (!client_inbound(cc, x, y)) {
 		x = cc->geom.w / 2;
 		y = cc->geom.h / 2;
 	}
