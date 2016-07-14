@@ -147,9 +147,7 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 				    cc->bwidth;
 			}
 
-			area = screen_area(sc,
-			    cc->geom.x + cc->geom.w / 2,
-			    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+			area = client_region_area(cc, CWM_GAP);
 			cc->geom.x += client_snapcalc(cc->geom.x,
 			    cc->geom.x + cc->geom.w + (cc->bwidth * 2),
 			    area.x, area.x + area.w, sc->snapdist);

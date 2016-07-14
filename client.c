@@ -101,6 +101,7 @@ client_init(Window win, struct screen_ctx *sc)
 		if ((cc->wmh) && (cc->wmh->flags & StateHint))
 			client_set_wm_state(cc, cc->wmh->initial_state);
 	} else {
+		cc->rc = region_find(sc, cc->geom);
 		if ((XQueryPointer(X_Dpy, cc->win, &rwin, &cwin,
 		    &x, &y, &wx, &wy, &mask)) && (cwin != None))
 			activate = 1;
@@ -252,6 +253,16 @@ client_current(void)
 	return(curcc);
 }
 
+struct geom
+client_region_area(struct client_ctx *cc, int flags)
+{
+	struct geom	 area = cc->rc->view;
+
+	if (flags & CWM_GAP)
+		area = screen_apply_gap(cc->sc, area);
+	return(area);
+}
+
 void
 client_toggle_freeze(struct client_ctx *cc)
 {
@@ -279,7 +290,6 @@ client_toggle_sticky(struct client_ctx *cc)
 void
 client_toggle_fullscreen(struct client_ctx *cc)
 {
-	struct screen_ctx	*sc = cc->sc;
 	struct geom		 area;
 
 	if ((cc->flags & CLIENT_FREEZE) &&
@@ -296,9 +306,7 @@ client_toggle_fullscreen(struct client_ctx *cc)
 
 	cc->fullgeom = cc->geom;
 
-	area = screen_area(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_NOGAP);
+	area = client_region_area(cc, CWM_NOGAP);
 
 	cc->bwidth = 0;
 	cc->geom = area;
@@ -312,7 +320,6 @@ resize:
 void
 client_toggle_maximize(struct client_ctx *cc)
 {
-	struct screen_ctx	*sc = cc->sc;
 	struct geom		 area;
 
 	if (cc->flags & CLIENT_FREEZE)
@@ -334,14 +341,7 @@ client_toggle_maximize(struct client_ctx *cc)
 		cc->savegeom.x = cc->geom.x;
 	}
 
-	/*
-	 * pick screen that the middle of the window is on.
-	 * that's probably more fair than if just the origin of
-	 * a window is poking over a boundary
-	 */
-	area = screen_area(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	area = client_region_area(cc, CWM_GAP);
 
 	cc->geom.x = area.x;
 	cc->geom.y = area.y;
@@ -357,7 +357,6 @@ resize:
 void
 client_toggle_vmaximize(struct client_ctx *cc)
 {
-	struct screen_ctx	*sc = cc->sc;
 	struct geom		 area;
 
 	if (cc->flags & CLIENT_FREEZE)
@@ -373,9 +372,7 @@ client_toggle_vmaximize(struct client_ctx *cc)
 	cc->savegeom.y = cc->geom.y;
 	cc->savegeom.h = cc->geom.h;
 
-	area = screen_area(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	area = client_region_area(cc, CWM_GAP);
 
 	cc->geom.y = area.y;
 	cc->geom.h = area.h - (cc->bwidth * 2);
@@ -389,7 +386,6 @@ resize:
 void
 client_toggle_hmaximize(struct client_ctx *cc)
 {
-	struct screen_ctx	*sc = cc->sc;
 	struct geom		 area;
 
 	if (cc->flags & CLIENT_FREEZE)
@@ -405,9 +401,7 @@ client_toggle_hmaximize(struct client_ctx *cc)
 	cc->savegeom.x = cc->geom.x;
 	cc->savegeom.w = cc->geom.w;
 
-	area = screen_area(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	area = client_region_area(cc, CWM_GAP);
 
 	cc->geom.x = area.x;
 	cc->geom.w = area.w - (cc->bwidth * 2);
@@ -440,7 +434,8 @@ client_keep_visible(struct client_ctx *cc)
 	int			 changed = 0;
 
 	/* Recalculate region for the client */
-	rc = region_find(cc->sc, cc->geom);
+	cc->rc = region_find(cc->sc, cc->geom);
+	rc = cc->rc;
 	if (cc->geom.x + cc->geom.w + (int)(cc->bwidth * 2) <= rc->view.x) {
 		cc->geom.x = rc->view.x - (cc->geom.w + (cc->bwidth * 2) - 1);
 		changed = 1;
@@ -817,6 +812,7 @@ static void
 client_placecalc(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
+	struct geom		 area;
 	int			 xslack, yslack;
 
 	if (cc->hint.flags & (USPosition | PPosition)) {
@@ -827,40 +823,26 @@ client_placecalc(struct client_ctx *cc)
 		 * XRandR bits mean that {x,y}max shouldn't be outside what's
 		 * currently there.
 		 */
-		xslack = sc->view.w - cc->geom.w - cc->bwidth * 2;
-		yslack = sc->view.h - cc->geom.h - cc->bwidth * 2;
-		cc->geom.x = MIN(cc->geom.x, xslack);
-		cc->geom.y = MIN(cc->geom.y, yslack);
+		cc->rc = region_find(sc, cc->geom);
+		area = client_region_area(cc, CWM_NOGAP);
 	} else {
-		struct geom		 area;
+		struct geom		 point;
 		int			 xmouse, ymouse;
 
 		xu_ptr_getpos(sc->rootwin, &xmouse, &ymouse);
-		area = screen_area(sc, xmouse, ymouse, CWM_GAP);
-		area.w += area.x;
-		area.h += area.y;
-		xmouse = MAX(xmouse, area.x) - cc->geom.w / 2;
-		ymouse = MAX(ymouse, area.y) - cc->geom.h / 2;
+		point = (struct geom){ xmouse, ymouse, 0, 0 };
+		cc->rc = region_find(sc, point);
+		area = client_region_area(cc, CWM_GAP);
 
-		xmouse = MAX(xmouse, area.x);
-		ymouse = MAX(ymouse, area.y);
-
-		xslack = area.w - cc->geom.w - cc->bwidth * 2;
-		yslack = area.h - cc->geom.h - cc->bwidth * 2;
-
-		if (xslack >= area.x) {
-			cc->geom.x = MAX(MIN(xmouse, xslack), area.x);
-		} else {
-			cc->geom.x = area.x;
-			cc->geom.w = area.w;
-		}
-		if (yslack >= area.y) {
-			cc->geom.y = MAX(MIN(ymouse, yslack), area.y);
-		} else {
-			cc->geom.y = area.y;
-			cc->geom.h = area.h;
-		}
+		cc->geom.w = MIN(cc->geom.w, area.w - cc->bwidth * 2);
+		cc->geom.h = MIN(cc->geom.h, area.h - cc->bwidth * 2);
+		cc->geom.x = xmouse - cc->geom.w / 2 - cc->bwidth;
+		cc->geom.y = ymouse - cc->geom.h / 2 - cc->bwidth;
 	}
+	xslack = area.x + area.w - cc->geom.w - cc->bwidth * 2;
+	yslack = area.y + area.h - cc->geom.h - cc->bwidth * 2;
+	cc->geom.x = MAX(MIN(cc->geom.x, xslack), area.x);
+	cc->geom.y = MAX(MIN(cc->geom.y, yslack), area.y);
 }
 
 static void
@@ -1039,7 +1021,6 @@ client_htile(struct client_ctx *cc)
 {
 	struct client_ctx	*ci;
 	struct group_ctx 	*gc = cc->gc;
-	struct screen_ctx 	*sc = cc->sc;
 	struct geom 		 area;
 	int 			 i, n, mh, x, h, w;
 
@@ -1048,17 +1029,15 @@ client_htile(struct client_ctx *cc)
 	i = n = 0;
 
 	TAILQ_FOREACH(ci, &gc->clientq, group_entry) {
-		if (ci->flags & CLIENT_HIDDEN ||
-		    ci->flags & CLIENT_IGNORE || (ci == cc))
+		if ((ci->flags & (CLIENT_HIDDEN | CLIENT_IGNORE)) ||
+		    (ci == cc) || (ci->rc != cc->rc))
 			continue;
 		n++;
 	}
 	if (n == 0)
 		return;
 
-	area = screen_area(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	area = client_region_area(cc, CWM_GAP);
 
 	if (cc->flags & CLIENT_VMAXIMIZED ||
 	    cc->geom.h + (cc->bwidth * 2) >= area.h)
@@ -1076,8 +1055,8 @@ client_htile(struct client_ctx *cc)
 	w = area.w / n;
 	h = area.h - mh;
 	TAILQ_FOREACH(ci, &gc->clientq, group_entry) {
-		if (ci->flags & CLIENT_HIDDEN ||
-		    ci->flags & CLIENT_IGNORE || (ci == cc))
+		if ((ci->flags & (CLIENT_HIDDEN | CLIENT_IGNORE)) ||
+		    (ci == cc) || (ci->rc != cc->rc))
 			continue;
 		ci->bwidth = Conf.bwidth;
 		ci->geom.y = area.y + mh;
@@ -1098,7 +1077,6 @@ client_vtile(struct client_ctx *cc)
 {
 	struct client_ctx	*ci;
 	struct group_ctx 	*gc = cc->gc;
-	struct screen_ctx 	*sc = cc->sc;
 	struct geom 		 area;
 	int 			 i, n, mw, y, h, w;
 
@@ -1107,17 +1085,15 @@ client_vtile(struct client_ctx *cc)
 	i = n = 0;
 
 	TAILQ_FOREACH(ci, &gc->clientq, group_entry) {
-		if (ci->flags & CLIENT_HIDDEN ||
-		    ci->flags & CLIENT_IGNORE || (ci == cc))
+		if ((ci->flags & (CLIENT_HIDDEN | CLIENT_IGNORE)) ||
+		    (ci == cc) || (ci->rc != cc->rc))
 			continue;
 		n++;
 	}
 	if (n == 0)
 		return;
 
-	area = screen_area(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	area = client_region_area(cc, CWM_GAP);
 
 	if (cc->flags & CLIENT_HMAXIMIZED ||
 	    cc->geom.w + (cc->bwidth * 2) >= area.w)
@@ -1135,8 +1111,8 @@ client_vtile(struct client_ctx *cc)
 	h = area.h / n;
 	w = area.w - mw;
 	TAILQ_FOREACH(ci, &gc->clientq, group_entry) {
-		if (ci->flags & CLIENT_HIDDEN ||
-		    ci->flags & CLIENT_IGNORE || (ci == cc))
+		if ((ci->flags & (CLIENT_HIDDEN | CLIENT_IGNORE)) ||
+		    (ci == cc) || (ci->rc != cc->rc))
 			continue;
 		ci->bwidth = Conf.bwidth;
 		ci->geom.y = y;

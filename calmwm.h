@@ -173,6 +173,7 @@ struct client_ctx {
 	TAILQ_ENTRY(client_ctx)	 entry;
 	TAILQ_ENTRY(client_ctx)	 group_entry;
 	struct screen_ctx	*sc;
+	struct region_ctx	*rc;
 	struct group_ctx	*gc;
 	Window			 win;
 	Colormap		 colormap;
@@ -440,6 +441,7 @@ void			 client_set_wm_state(struct client_ctx *, long);
 void			 client_setactive(struct client_ctx *);
 void			 client_setname(struct client_ctx *);
 int			 client_snapcalc(int, int, int, int, int);
+struct geom		 client_region_area(struct client_ctx *, int);
 void			 client_toggle_freeze(struct client_ctx *);
 void			 client_toggle_fullscreen(struct client_ctx *);
 void			 client_toggle_hidden(struct client_ctx *);
