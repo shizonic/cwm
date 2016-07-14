@@ -125,32 +125,67 @@ screen_updatestackingorder(struct screen_ctx *sc)
 }
 
 struct region_ctx *
-region_find(struct screen_ctx *sc, int x, int y)
+region_find(struct screen_ctx *sc, struct geom area)
 {
 	struct region_ctx	*rc;
+	struct region_ctx	*best = NULL;
+	long long		 overlap = 0;
+	int			 cx, cy, distance = -1;
 
+	cx = area.x + area.w / 2;
+	cy = area.y + area.h / 2;
 	TAILQ_FOREACH(rc, &sc->regionq, entry) {
-		if ((x >= rc->view.x) && (x < (rc->view.x + rc->view.w)) &&
-		    (y >= rc->view.y) && (y < (rc->view.y + rc->view.h))) {
-			break;
+		if ((cx >= rc->view.x) && (cx < (rc->view.x + rc->view.w)) &&
+		    (cy >= rc->view.y) && (cy < (rc->view.y + rc->view.h))) {
+			/* Centre of area is within region, we're done */
+			return(rc);
+		}
+		if ((area.x < (rc->view.x + rc->view.w)) &&
+		    (rc->view.x < (area.x + area.w)) &&
+		    (area.y < (rc->view.y + rc->view.h)) &&
+		    (rc->view.y < (area.y + area.h))) {
+			/* Region overlaps with area; find largest overlap */
+			int	w, h;
+
+			w = MIN(area.x + area.w, rc->view.x + rc->view.w) -
+			    MAX(area.x, rc->view.x);
+			h = MIN(area.y + area.h, rc->view.y + rc->view.h) -
+			    MAX(area.y, rc->view.y);
+			if ((long long)w * h > overlap) {
+				overlap = (long long)w * h;
+				best = rc;
+			}
+		} else if (!overlap) {
+			/* Lacking overlaps, find region with shortest
+			 * Manhattan distance from area */
+			int	d = 0;
+
+			if ((area.x + area.w) <= rc->view.x)
+				d += rc->view.x - (area.x + area.w - 1);
+			else if ((rc->view.x + rc->view.w) <= area.x)
+				d += area.x - (rc->view.x + rc->view.w - 1);
+			if ((area.y + area.h) <= rc->view.y)
+				d += rc->view.y - (area.y + area.h - 1);
+			else if ((rc->view.y + rc->view.h) <= area.y)
+				d += area.y - (rc->view.y + rc->view.h - 1);
+
+			if (distance == -1 || d < distance) {
+				distance = d;
+				best = rc;
+			}
 		}
 	}
-	return(rc);
+	return(best);
 }
 
 struct geom
 screen_area(struct screen_ctx *sc, int x, int y, int flags)
 {
 	struct region_ctx	*rc;
-	struct geom		 area = sc->view;
+	struct geom		 area, point = { x, y, 0, 0 };
 
-	TAILQ_FOREACH(rc, &sc->regionq, entry) {
-		if ((x >= rc->view.x) && (x < (rc->view.x + rc->view.w)) &&
-		    (y >= rc->view.y) && (y < (rc->view.y + rc->view.h))) {
-			area = rc->view;
-			break;
-		}
-	}
+	rc = region_find(sc, point);
+	area = rc->view;
 	if (flags & CWM_GAP)
 		area = screen_apply_gap(sc, area);
 	return(area);
