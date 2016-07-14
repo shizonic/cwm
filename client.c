@@ -834,8 +834,11 @@ client_placecalc(struct client_ctx *cc)
 		cc->rc = region_find(sc, point);
 		area = client_region_area(cc, CWM_GAP);
 
-		cc->geom.w = MIN(cc->geom.w, area.w - cc->bwidth * 2);
-		cc->geom.h = MIN(cc->geom.h, area.h - cc->bwidth * 2);
+		if (!(cc->hint.flags & (USSize | PSize))) {
+			cc->geom.w = MIN(cc->geom.w, area.w - cc->bwidth * 2);
+			cc->geom.h = MIN(cc->geom.h, area.h - cc->bwidth * 2);
+			client_applysizehints(cc);
+		}
 		cc->geom.x = xmouse - cc->geom.w / 2 - cc->bwidth;
 		cc->geom.y = ymouse - cc->geom.h / 2 - cc->bwidth;
 	}
