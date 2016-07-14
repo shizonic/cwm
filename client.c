@@ -436,21 +436,23 @@ client_resize(struct client_ctx *cc, int reset)
 int
 client_keep_visible(struct client_ctx *cc)
 {
-	struct screen_ctx	*sc = cc->sc;
+	struct region_ctx	*rc;
 	int			 changed = 0;
 
-	if (cc->geom.x + cc->geom.w + (int)(cc->bwidth * 2) <= 0) {
-		cc->geom.x = -(cc->geom.w + (cc->bwidth * 2) - 1);
+	/* Recalculate region for the client */
+	rc = region_find(cc->sc, cc->geom);
+	if (cc->geom.x + cc->geom.w + (int)(cc->bwidth * 2) <= rc->view.x) {
+		cc->geom.x = rc->view.x - (cc->geom.w + (cc->bwidth * 2) - 1);
 		changed = 1;
-	} else if (cc->geom.x >= sc->view.w) {
-		cc->geom.x = sc->view.w - 1;
+	} else if (cc->geom.x >= (rc->view.x + rc->view.w)) {
+		cc->geom.x = rc->view.x + rc->view.w - 1;
 		changed = 1;
 	}
-	if (cc->geom.y + cc->geom.h + (int)(cc->bwidth * 2) <= 0) {
-		cc->geom.y = -(cc->geom.h + (cc->bwidth * 2) - 1);
+	if (cc->geom.y + cc->geom.h + (int)(cc->bwidth * 2) <= rc->view.y) {
+		cc->geom.y = rc->view.y - (cc->geom.h + (cc->bwidth * 2) - 1);
 		changed = 1;
-	} else if (cc->geom.y >= sc->view.h) {
-		cc->geom.y = sc->view.h - 1;
+	} else if (cc->geom.y >= (rc->view.y + rc->view.h)) {
+		cc->geom.y = rc->view.y + rc->view.h - 1;
 		changed = 1;
 	}
 	return(changed);
