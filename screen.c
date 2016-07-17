@@ -194,7 +194,9 @@ screen_area(struct screen_ctx *sc, int x, int y, int flags)
 void
 screen_update_geometry(struct screen_ctx *sc)
 {
-	struct region_ctx	*rc;
+	struct region_ctx_q	 oldregionq;
+	struct region_ctx	*oldrc, *rc;
+	struct client_ctx	*cc;
 
 	sc->view.x = 0;
 	sc->view.y = 0;
@@ -202,9 +204,10 @@ screen_update_geometry(struct screen_ctx *sc)
 	sc->view.h = DisplayHeight(X_Dpy, sc->which);
 	sc->work = screen_apply_gap(sc, sc->view);
 
+	TAILQ_INIT(&oldregionq);
 	while ((rc = TAILQ_FIRST(&sc->regionq)) != NULL) {
 		TAILQ_REMOVE(&sc->regionq, rc, entry);
-		free(rc);
+		TAILQ_INSERT_TAIL(&oldregionq, rc, entry);
 	}
 
 	if (HasRandr) {
@@ -241,6 +244,17 @@ screen_update_geometry(struct screen_ctx *sc)
 		rc->view.w = DisplayWidth(X_Dpy, sc->which);
 		rc->view.h = DisplayHeight(X_Dpy, sc->which);
 		TAILQ_INSERT_TAIL(&sc->regionq, rc, entry);
+	}
+
+	while ((oldrc = TAILQ_FIRST(&oldregionq)) != NULL) {
+		rc = region_find(sc, oldrc->view);
+		TAILQ_FOREACH(cc, &sc->clientq, entry) {
+			if (cc->rc != oldrc)
+				continue;
+			client_migrate_region(cc, rc);
+		}
+		TAILQ_REMOVE(&oldregionq, oldrc, entry);
+		free(oldrc);
 	}
 
 	xu_ewmh_net_desktop_geometry(sc);

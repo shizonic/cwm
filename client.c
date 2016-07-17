@@ -1131,6 +1131,51 @@ client_vtile(struct client_ctx *cc)
 	}
 }
 
+static void
+client_migrate_area(struct geom *geom, struct geom *newarea,
+    struct geom *oldarea)
+{
+	int	 oldslack, newslack;
+
+	oldslack = oldarea->w - geom->w - (Conf.bwidth * 2);
+	newslack = newarea->w - geom->w - (Conf.bwidth * 2);
+	geom->x -= oldarea->x;
+	if (oldslack != 0 && newslack != oldslack)
+		geom->x = (long long)geom->x * newslack / oldslack;
+	geom->x += newarea->x;
+
+	oldslack = oldarea->h - geom->h - (Conf.bwidth * 2);
+	newslack = newarea->h - geom->h - (Conf.bwidth * 2);
+	geom->y -= oldarea->y;
+	if (oldslack != 0 && newslack != oldslack)
+		geom->y = (long long)geom->y * newslack / oldslack;
+	geom->y += newarea->y;
+}
+
+void
+client_migrate_region(struct client_ctx *cc, struct region_ctx *rc)
+{
+	struct screen_ctx	*sc = cc->sc;
+	struct geom		 oldarea, newarea;
+
+	oldarea = screen_apply_gap(sc, cc->rc->view);
+	newarea = screen_apply_gap(sc, rc->view);
+	client_migrate_area(&cc->savegeom, &newarea, &oldarea);
+	client_migrate_area(&cc->fullgeom, &newarea, &oldarea);
+	if (cc->flags & CLIENT_FULLSCREEN)
+		cc->geom = rc->view;
+	else {
+		client_migrate_area(&cc->geom, &newarea, &oldarea);
+		if (cc->flags & CLIENT_HMAXIMIZED)
+			cc->geom.w = newarea.w - (cc->bwidth * 2);
+		if (cc->flags & CLIENT_VMAXIMIZED)
+			cc->geom.h = newarea.h - (cc->bwidth * 2);
+		client_keep_visible(cc);
+	}
+	cc->rc = rc;
+	client_resize(cc, 0);
+}
+
 long
 client_get_wm_state(struct client_ctx *cc)
 {
@@ -1152,4 +1197,3 @@ client_set_wm_state(struct client_ctx *cc, long state)
 	XChangeProperty(X_Dpy, cc->win, cwmh[WM_STATE], cwmh[WM_STATE], 32,
 	    PropModeReplace, (unsigned char *)data, 2);
 }
-
