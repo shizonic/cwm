@@ -492,6 +492,24 @@ kbfunc_client_movetogroup(struct client_ctx *cc, union arg *arg)
 }
 
 void
+kbfunc_client_migrateregion(struct client_ctx *cc, union arg *arg)
+{
+	struct screen_ctx	*sc = cc->sc;
+	struct region_ctx	*rc;
+
+	if (arg->i == CWM_CLIENT_RCYCLE) {
+		if ((rc = TAILQ_PREV(cc->rc, region_ctx_q, entry)) == NULL)
+			rc = TAILQ_LAST(&sc->regionq, region_ctx_q);
+	} else {
+		if ((rc = TAILQ_NEXT(cc->rc, entry)) == NULL)
+			rc = TAILQ_FIRST(&sc->regionq);
+	}
+	client_ptrsave(cc);
+	client_migrate_region(cc, rc);
+	client_ptrwarp(cc);
+}
+
+void
 kbfunc_client_toggle_sticky(struct client_ctx *cc, union arg *arg)
 {
 	client_toggle_sticky(cc);

@@ -504,11 +504,12 @@ void			 kbfunc_client_grouptoggle(struct client_ctx *,
 void			 kbfunc_client_hide(struct client_ctx *, union arg *);
 void			 kbfunc_client_label(struct client_ctx *, union arg *);
 void			 kbfunc_client_lower(struct client_ctx *, union arg *);
+void			 kbfunc_client_migrateregion(struct client_ctx *,
+			     union arg *);
 void			 kbfunc_client_move(struct client_ctx *, union arg *);
 void			 kbfunc_client_movetogroup(struct client_ctx *,
 			     union arg *);
 void			 kbfunc_client_raise(struct client_ctx *, union arg *);
-void			 kbfunc_client_rcycle(struct client_ctx *, union arg *);
 void			 kbfunc_client_resize(struct client_ctx *, union arg *);
 void 			 kbfunc_client_tile(struct client_ctx *, union arg *);
 void			 kbfunc_client_toggle_freeze(struct client_ctx *,
