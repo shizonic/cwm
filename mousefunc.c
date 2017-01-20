@@ -79,10 +79,10 @@ mousefunc_client_resize(void *ctx, union arg *arg, enum xev xev)
 			XUngrabPointer(X_Dpy, CurrentTime);
 
 			/* Make sure the pointer stays within the window. */
-			if (cc->ptr.x > cc->geom.w)
-				cc->ptr.x = cc->geom.w - cc->bwidth;
-			if (cc->ptr.y > cc->geom.h)
-				cc->ptr.y = cc->geom.h - cc->bwidth;
+			if (cc->ptr.x >= cc->geom.w + cc->bwidth)
+				cc->ptr.x = cc->geom.w + cc->bwidth - 1;
+			if (cc->ptr.y >= cc->geom.h + cc->bwidth)
+				cc->ptr.y = cc->geom.h + cc->bwidth - 1;
 			client_ptrwarp(cc);
 			return;
 		}
@@ -106,14 +106,14 @@ mousefunc_client_move(void *ctx, union arg *arg, enum xev xev)
 		return;
 
 	xu_ptr_getpos(cc->win, &px, &py);
-	if (px < 0) 
-		px = 0;
-	else if (px > cc->geom.w)
-		px = cc->geom.w;
-	if (py < 0)
-		py = 0;
-	else if (py > cc->geom.h)
-		py = cc->geom.h;
+	if (px < -(int)cc->bwidth)
+		px = -(int)cc->bwidth;
+	else if (px >= cc->geom.w + (int)cc->bwidth)
+		px = cc->geom.w + (int)cc->bwidth - 1;
+	if (py < -(int)cc->bwidth)
+		py = -(int)cc->bwidth;
+	else if (py >= cc->geom.h + (int)cc->bwidth)
+		py = cc->geom.h + (int)cc->bwidth - 1;
 
 	xu_ptr_setpos(cc->win, px, py);
 

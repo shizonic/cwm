@@ -797,12 +797,12 @@ client_placecalc(struct client_ctx *cc)
 
 		if (cc->geom.x + ((int)cc->bwidth * 2) >= wmax)
 			cc->geom.x = wmax - (cc->bwidth * 2);
-		if (cc->geom.x + cc->geom.w - ((int)cc->bwidth * 2) < 0)
-			cc->geom.x = -cc->geom.w;
+		if (cc->geom.x + cc->geom.w - ((int)cc->bwidth * 2) <= 0)
+			cc->geom.x = -(cc->geom.w + ((int)cc->bwidth * 2) - 1);
 		if (cc->geom.y + ((int)cc->bwidth * 2) >= hmax)
 			cc->geom.y = hmax - (cc->bwidth * 2);
-		if (cc->geom.y + cc->geom.h - ((int)cc->bwidth * 2) < 0)
-			cc->geom.y = -cc->geom.h;
+		if (cc->geom.y + cc->geom.h - ((int)cc->bwidth * 2) <= 0)
+			cc->geom.y = -(cc->geom.h + ((int)cc->bwidth * 2) - 1);
 	} else {
 		struct geom		 area;
 		int			 xmouse, ymouse;
@@ -972,8 +972,8 @@ client_transient(struct client_ctx *cc)
 int
 client_inbound(struct client_ctx *cc, int x, int y)
 {
-	return(x < cc->geom.w && x >= 0 &&
-	    y < cc->geom.h && y >= 0);
+	return(x < cc->geom.w + ((int)cc->bwidth) && x >= -(int)cc->bwidth &&
+	    y < cc->geom.h + ((int)cc->bwidth) && y >= -(int)cc->bwidth);
 }
 
 int
