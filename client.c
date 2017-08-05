@@ -779,8 +779,8 @@ client_placecalc(struct client_ctx *cc)
 		area = screen_area(sc, xmouse, ymouse, CWM_GAP);
 		area.w += area.x;
 		area.h += area.y;
-		xmouse = MAX(xmouse, area.x) - cc->geom.w / 2;
-		ymouse = MAX(ymouse, area.y) - cc->geom.h / 2;
+		xmouse = MAX(xmouse, area.x) - cc->geom.w / 2 - cc->bwidth;
+		ymouse = MAX(ymouse, area.y) - cc->geom.h / 2 - cc->bwidth;
 
 		xmouse = MAX(xmouse, area.x);
 		ymouse = MAX(ymouse, area.y);
