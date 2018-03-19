@@ -199,7 +199,6 @@ screen_update_geometry(struct screen_ctx *sc)
 			rc->view.y = ci->y;
 			rc->view.w = ci->width;
 			rc->view.h = ci->height;
-			rc->work = screen_apply_gap(sc, rc->view);
 			TAILQ_INSERT_TAIL(&sc->regionq, rc, entry);
 
 			XRRFreeCrtcInfo(ci);
@@ -212,7 +211,6 @@ screen_update_geometry(struct screen_ctx *sc)
 		rc->view.y = 0;
 		rc->view.w = DisplayWidth(X_Dpy, sc->which);
 		rc->view.h = DisplayHeight(X_Dpy, sc->which);
-		rc->work = screen_apply_gap(sc, rc->view);
 		TAILQ_INSERT_TAIL(&sc->regionq, rc, entry);
 	}
 
