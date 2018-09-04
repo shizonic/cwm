@@ -357,12 +357,10 @@ xev_handle_keyrelease(XEvent *ee)
 			if ((cc = client_current()) != NULL) {
 				if (sc->cycling) {
 					sc->cycling = 0;
-					client_mtf(cc);
+					client_setactive(cc);
 				}
-				if (cc->flags &
-				    (CLIENT_HIGHLIGHT | CLIENT_URGENCY)) {
-					cc->flags &= ~(CLIENT_HIGHLIGHT |
-					    CLIENT_URGENCY);
+				if (cc->flags & CLIENT_HIGHLIGHT) {
+					cc->flags &= CLIENT_HIGHLIGHT;
 					client_draw_border(cc);
 				}
 			}
