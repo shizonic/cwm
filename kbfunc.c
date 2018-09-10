@@ -485,6 +485,7 @@ kbfunc_menu_client(void *ctx, struct cargs *cargs)
 		if (old_cc)
 			client_ptrsave(old_cc);
 		client_ptrwarp(cc);
+		client_setactive(cc);
 	}
 
 	menuq_clear(&menuq);
