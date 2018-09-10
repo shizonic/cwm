@@ -471,10 +471,7 @@ kbfunc_menu_client(void *ctx, struct cargs *cargs)
 
 	TAILQ_INIT(&menuq);
 	TAILQ_FOREACH(cc, &sc->clientq, entry) {
-		if (!all) {
-			if (cc->flags & CLIENT_HIDDEN)
-				menuq_add(&menuq, cc, NULL);
-		} else
+		if (all || (cc->flags & CLIENT_HIDDEN))
 			menuq_add(&menuq, cc, NULL);
 	}
 
